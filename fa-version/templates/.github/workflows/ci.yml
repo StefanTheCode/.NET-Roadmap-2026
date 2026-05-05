@@ -1,0 +1,72 @@
+# -----------------------------------------------------------
+# GitHub Actions - Build, Test, Deploy
+# -----------------------------------------------------------
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  DOTNET_VERSION: '9.0.x'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: taskflow_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore -c Release
+
+      - name: Run unit tests
+        run: dotnet test tests/TaskFlow.UnitTests --no-build -c Release --verbosity normal
+
+      - name: Run integration tests
+        run: dotnet test tests/TaskFlow.IntegrationTests --no-build -c Release --verbosity normal
+        env:
+          ConnectionStrings__Database: "Host=localhost;Port=5432;Database=taskflow_test;Username=postgres;Password=postgres"
+
+  docker:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t taskflow-api:${{ github.sha }} .
+
+      # Add your registry push step here:
+      # - name: Push to registry
+      #   run: |
+      #     docker tag taskflow-api:${{ github.sha }} your-registry/taskflow-api:latest
+      #     docker push your-registry/taskflow-api:latest

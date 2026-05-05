@@ -1,0 +1,24 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+logs/
+*.log
+
+# Docker
+docker-compose.override.yml
+
+# Secrets
+appsettings.*.local.json
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# User secrets
+secrets.json

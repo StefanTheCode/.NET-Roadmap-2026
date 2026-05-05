@@ -1,0 +1,64 @@
+# -----------------------------------------------------------
+# Docker Compose - Local Development
+# -----------------------------------------------------------
+# Run: docker-compose up -d
+# Stop: docker-compose down
+# Reset: docker-compose down -v (removes data)
+# -----------------------------------------------------------
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__Database=Host=db;Port=5432;Database=taskflow;Username=postgres;Password=postgres
+      - ConnectionStrings__Redis=redis:6379
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+  db:
+    image: postgres:17-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: taskflow
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # Optional: Seq for structured log viewing
+  seq:
+    image: datalust/seq:latest
+    ports:
+      - "5341:5341"    # Ingestion
+      - "8081:80"      # UI
+    environment:
+      ACCEPT_EULA: "Y"
+    volumes:
+      - seq_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:
+  seq_data:

@@ -1,5 +1,7 @@
 # Practical .NET Roadmap for 2026
 
+> 🌍 Available in Persian: [README فارسی](fa-version/README.md)
+
 **The only guide you need to go from zero to job-ready .NET developer.**
 
 No fluff. No random technology lists. Just a clear path that mirrors how real developers build real applications.
